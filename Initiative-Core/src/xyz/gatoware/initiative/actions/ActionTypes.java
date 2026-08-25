@@ -1,4 +1,4 @@
-package xyz.gatoware.actions;
+package xyz.gatoware.initiative.actions;
 
 public enum ActionTypes {
     LOCAL_SCRIPT,

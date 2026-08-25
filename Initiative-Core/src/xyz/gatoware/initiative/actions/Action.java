@@ -1,11 +1,11 @@
-package xyz.gatoware.actions;
+package xyz.gatoware.initiative.actions;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import xyz.gatoware.devices.Device;
+import xyz.gatoware.initiative.devices.Device;
 
 /** A self-describing operation. Devices, rather than Actions, execute it. */
 public final class Action {

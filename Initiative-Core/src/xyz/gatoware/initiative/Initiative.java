@@ -1,16 +1,28 @@
 package xyz.gatoware.initiative;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
-import xyz.gatoware.actions.Action;
-import xyz.gatoware.devices.Device;
-import xyz.gatoware.devices.Registry;
+import xyz.gatoware.initiative.actions.Action;
+import xyz.gatoware.initiative.api.HTTPServer;
+import xyz.gatoware.initiative.devices.Device;
+import xyz.gatoware.initiative.devices.Registry;
 
 public enum Initiative {
 	INSTANCE;
 	
-	public final Registry registry = new Registry();
+	public Registry registry;
+	public HTTPServer httpServer;
+	
+	public void initInitiative() {
+		registry = new Registry();
+		try {
+			httpServer = new HTTPServer();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	public void registerDevice(final Device device) {
 		registry.register(device);
@@ -28,4 +40,5 @@ public enum Initiative {
 		Objects.requireNonNull(action, "An action is required.");
 		return action.getTarget().executeAction(action, arguments);
 	}
+
 }

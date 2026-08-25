@@ -1,4 +1,4 @@
-package xyz.gatoware.actions;
+package xyz.gatoware.initiative.actions;
 
 import java.util.Objects;
 

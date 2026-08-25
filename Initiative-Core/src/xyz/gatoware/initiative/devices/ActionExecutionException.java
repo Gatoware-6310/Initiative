@@ -1,4 +1,4 @@
-package xyz.gatoware.devices;
+package xyz.gatoware.initiative.devices;
 
 /** Indicates that a device could not complete an action. */
 public final class ActionExecutionException extends RuntimeException {

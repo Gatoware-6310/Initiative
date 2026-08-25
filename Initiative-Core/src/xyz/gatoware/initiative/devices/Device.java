@@ -1,9 +1,9 @@
-package xyz.gatoware.devices;
+package xyz.gatoware.initiative.devices;
 
 import java.util.List;
 import java.util.Objects;
 
-import xyz.gatoware.actions.Action;
+import xyz.gatoware.initiative.actions.Action;
 
 /** Common representation of something Initiative can observe or control. */
 public abstract class Device {

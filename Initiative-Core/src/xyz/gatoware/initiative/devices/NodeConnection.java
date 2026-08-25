@@ -1,4 +1,4 @@
-package xyz.gatoware.devices;
+package xyz.gatoware.initiative.devices;
 
 /**
  * One authenticated, persistent connection from a Node to the Initiative Core.

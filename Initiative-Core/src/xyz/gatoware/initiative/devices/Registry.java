@@ -1,4 +1,4 @@
-package xyz.gatoware.devices;
+package xyz.gatoware.initiative.devices;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.Collections;

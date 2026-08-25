@@ -1,4 +1,4 @@
-package xyz.gatoware.devices;
+package xyz.gatoware.initiative.devices;
 
 public enum DeviceType {
     NODE,

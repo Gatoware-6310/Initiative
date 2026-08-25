@@ -35,13 +35,13 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.Timer;
 
-import xyz.gatoware.actions.Action;
-import xyz.gatoware.actions.ActionArgument;
-import xyz.gatoware.devices.External;
 import xyz.gatoware.initiative.Initiative;
+import xyz.gatoware.initiative.actions.Action;
+import xyz.gatoware.initiative.actions.ActionArgument;
+import xyz.gatoware.initiative.devices.Device;
+import xyz.gatoware.initiative.devices.External;
 
 /** A small Swing interface for registering and controlling Python externals. */
-@SuppressWarnings("serial")
 public final class InitiativeUi extends JFrame {
     private static final long serialVersionUID = 1L;
 
@@ -142,8 +142,11 @@ public final class InitiativeUi extends JFrame {
         }
 
         final List<SavedExternal> savedDevices = new ArrayList<SavedExternal>();
-        for (final External external : statusLabels.keySet()) {
-            savedDevices.add(new SavedExternal(external.getName(), external.getScriptPath()));
+        for (final Device device : Initiative.INSTANCE.getDevices()) {
+            if (device instanceof External) {
+                final External external = (External) device;
+                savedDevices.add(new SavedExternal(external.getName(), external.getScriptPath()));
+            }
         }
 
         final File file = chooser.getSelectedFile();
@@ -208,8 +211,10 @@ public final class InitiativeUi extends JFrame {
     }
 
     private void clearRegisteredExternals() {
-        for (final External external : new ArrayList<External>(statusLabels.keySet())) {
-            Initiative.INSTANCE.removeDevice(external);
+        for (final Device device : Initiative.INSTANCE.getDevices()) {
+            if (device instanceof External) {
+                Initiative.INSTANCE.removeDevice(device);
+            }
         }
         statusLabels.clear();
         devices.removeAll();

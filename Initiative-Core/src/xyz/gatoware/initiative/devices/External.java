@@ -1,4 +1,4 @@
-package xyz.gatoware.devices;
+package xyz.gatoware.initiative.devices;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,9 +10,9 @@ import java.util.Locale;
 import java.util.List;
 import java.util.Objects;
 
-import xyz.gatoware.actions.Action;
-import xyz.gatoware.actions.ActionArgument;
-import xyz.gatoware.actions.ActionTypes;
+import xyz.gatoware.initiative.actions.Action;
+import xyz.gatoware.initiative.actions.ActionArgument;
+import xyz.gatoware.initiative.actions.ActionTypes;
 
 /**
  * An external device implemented by a local Python script.

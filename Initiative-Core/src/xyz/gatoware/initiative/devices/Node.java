@@ -1,4 +1,4 @@
-package xyz.gatoware.devices;
+package xyz.gatoware.initiative.devices;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import xyz.gatoware.actions.Action;
+import xyz.gatoware.initiative.actions.Action;
 
 /** A machine or embedded device running Initiative Node software. */
 public class Node extends Device {
