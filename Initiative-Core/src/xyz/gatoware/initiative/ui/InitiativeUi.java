@@ -142,7 +142,7 @@ public final class InitiativeUi extends JFrame {
 
         final File file = chooser.getSelectedFile();
         try {
-            final int savedDeviceCount = SaveLoadDevices.save(file);
+            final int savedDeviceCount = SaveLoadDevices.save();
             appendOutput("Saved " + savedDeviceCount + " device(s) to " + file.getName() + ".");
         } catch (final IOException exception) {
             appendOutput("Could not save devices: " + rootMessage(exception));
@@ -160,7 +160,7 @@ public final class InitiativeUi extends JFrame {
             @Override
             protected List<Registration> doInBackground() throws Exception {
                 final List<Registration> registrations = new ArrayList<Registration>();
-                for (final External external : SaveLoadDevices.load(file)) {
+                for (final External external : SaveLoadDevices.load()) {
                     registrations.add(new Registration(external, external.capabilities()));
                 }
                 return registrations;

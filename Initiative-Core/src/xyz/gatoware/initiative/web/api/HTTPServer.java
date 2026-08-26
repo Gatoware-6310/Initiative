@@ -1,9 +1,10 @@
 package xyz.gatoware.initiative.web.api;
 
 import java.io.IOException;
-// import java.io.InputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,8 +19,10 @@ import xyz.gatoware.initiative.Initiative;
 import xyz.gatoware.initiative.actions.Action;
 import xyz.gatoware.initiative.actions.ActionArgument;
 import xyz.gatoware.initiative.devices.Device;
+import xyz.gatoware.initiative.devices.External;
 import xyz.gatoware.initiative.devices.Node;
 import xyz.gatoware.initiative.utils.strings.StringUtils;
+import xyz.gatoware.utils.serialization.SaveLoadDevices;
 
 public class HTTPServer implements HttpHandler {
 	
@@ -36,6 +39,7 @@ public class HTTPServer implements HttpHandler {
 		server.createContext("/initiative/devices/status", this::deviceStatus);
 		server.createContext("/initiative/devices/actions", this::listActions);
 		server.createContext("/initiative/devices/execute", this::executeAction);
+		server.createContext("/initiative/devices/registerExternal", this::registerExternal);
 		
 		executor = Executors.newFixedThreadPool(8, runnable ->
 				new Thread(runnable, "initiative-http-server"));
@@ -50,7 +54,10 @@ public class HTTPServer implements HttpHandler {
 
 	private void frontend(HttpExchange exchange) throws IOException {
 		exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
-		sendResponse(Files.readString(Path.of("/home/gatoware/initiative_frontend.html"), StandardCharsets.UTF_8), 200, exchange);
+		try(InputStream frontend = HTTPServer.class.getResourceAsStream("/xyz/gatoware/initiative/web/initiative_frontend.html")) {
+			if(frontend == null) throw new IOException("Could not find the Initiative frontend.");
+			sendResponse(new String(frontend.readAllBytes(), StandardCharsets.UTF_8), 200, exchange);
+		}
 	}
 	
 	private void health(HttpExchange exchange) throws IOException {
@@ -97,6 +104,53 @@ public class HTTPServer implements HttpHandler {
 		}
 		String response = Initiative.INSTANCE.executeAction(action, arguments);
 		sendResponse(response.isEmpty() ? "ok" : response, 200, exchange);
+	}
+
+	private void registerExternal(HttpExchange exchange) throws IOException {
+		String name = getQueryValue(exchange, "name");
+		String filename = getQueryValue(exchange, "filename");
+		if(name == null || name.trim().isEmpty() || filename == null || filename.trim().isEmpty()) {
+			sendResponse("A device name and Python script are required.", 400, exchange);
+			return;
+		}
+		if(Initiative.INSTANCE.registry.exists(name)) {
+			sendResponse("A device with that name already exists.", 409, exchange);
+			return;
+		}
+
+		String scriptName = Path.of(filename.replace('\\', '/')).getFileName().toString();
+		if(!scriptName.endsWith(".py")) {
+			sendResponse("Only Python scripts can be registered.", 400, exchange);
+			return;
+		}
+		byte[] script = exchange.getRequestBody().readAllBytes();
+		if(script.length == 0) {
+			sendResponse("The Python script is empty.", 400, exchange);
+			return;
+		}
+
+		Path scriptsDirectory = SaveLoadDevices.getDefaultFile().toPath().getParent().resolve("scripts");
+		Files.createDirectories(scriptsDirectory);
+		Path scriptPath = scriptsDirectory.resolve(scriptName);
+		Files.write(scriptPath, script);
+
+		External external = new External(name, scriptPath.toString());
+		external.capabilities();
+		Initiative.INSTANCE.registry.registerDevice(external);
+		SaveLoadDevices.save();
+		sendResponse("Registered " + name + ".", 201, exchange);
+	}
+
+	private String getQueryValue(HttpExchange exchange, String key) {
+		String query = exchange.getRequestURI().getRawQuery();
+		if(query == null) return null;
+		for(String field : query.split("&")) {
+			int separator = field.indexOf('=');
+			if(separator >= 0 && URLDecoder.decode(field.substring(0, separator), StandardCharsets.UTF_8).equals(key)) {
+				return URLDecoder.decode(field.substring(separator + 1), StandardCharsets.UTF_8);
+			}
+		}
+		return null;
 	}
 
 	private Object parseValue(String value, Class<?> type) {

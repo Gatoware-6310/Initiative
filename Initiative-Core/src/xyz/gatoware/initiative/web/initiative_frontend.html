@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Initiative Core</title>
+  <style>
+    @font-face {
+      font-family: "JetbrainsMono";
+      src: url("https://gatoware.xyz/fonts/JetBrainsMonoNL-Regular.ttf") format("truetype");
+    }
+
+    @font-face {
+      font-family: "JetbrainsMonoBold";
+      src: url("https://gatoware.xyz/fonts/JetBrainsMono-Bold.ttf") format("truetype");
+    }
+
+    @keyframes cotton-candy-scroll {
+      from { background-position: 0% 50%; }
+      to { background-position: 200% 50%; }
+    }
+
+    :root {
+      --light-blue: #4DB8EB;
+      --pink: #FFB5D8;
+      --light-pink: #FAE3EE;
+      --hero: #ffedf5;
+      --hero-soft: #ffe3ef;
+      --text: #29243a;
+      --text-muted: #6d667d;
+      --border: #efccdc;
+      --cotton-candy: linear-gradient(90deg, #ff66b2, #66ccff, #ff66b2);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scrollbar-width: none;
+    }
+
+    html::-webkit-scrollbar {
+      display: none;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px clamp(20px, 5vw, 72px) 0;
+      font-family: "JetbrainsMono", monospace;
+      color: var(--text);
+      background: var(--hero);
+    }
+
+    .cotton-candy-text {
+      background: var(--cotton-candy);
+      background-size: 200% 100%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: cotton-candy-scroll 3s linear infinite;
+    }
+
+    .cotton-candy-text-hover {
+      position: relative;
+      display: inline-block;
+      transition: color 0.4s ease;
+    }
+
+    .cotton-candy-text-hover::before {
+      content: attr(data-text);
+      position: absolute;
+      inset: 0;
+      background: var(--cotton-candy);
+      background-size: 200% 100%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      animation: cotton-candy-scroll 3s linear infinite;
+    }
+
+    .cotton-candy-text-hover:hover { color: transparent; }
+    .cotton-candy-text-hover:hover::before { opacity: 1; }
+
+    header {
+      position: relative;
+      z-index: 5;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: start;
+    }
+
+    #href-logo {
+      margin: 0 auto 0 5px;
+      font-family: "JetbrainsMonoBold", monospace;
+    }
+
+    header ul {
+      margin: 0 5px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    header li { display: inline; }
+    header li + li { margin-left: 6px; }
+
+    a {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    header hr {
+      flex-basis: 100%;
+      width: 100%;
+      border: 0;
+      border-top: 1px solid var(--pink);
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      display: flow-root;
+    }
+
+    .hero {
+      position: relative;
+      width: calc(100% + 2 * clamp(20px, 5vw, 72px));
+      min-height: calc(100vh - 65px);
+      margin-left: calc(-1 * clamp(20px, 5vw, 72px));
+      padding: 56px clamp(20px, 5vw, 72px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(255, 237, 245, 0.86);
+    }
+
+    #particles-js {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .initiative-panel {
+      position: relative;
+      z-index: 4;
+      width: min(100%, 1050px);
+      padding: clamp(22px, 4vw, 40px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255, 237, 245, 0.94);
+      box-shadow: 0 8px 28px rgba(41, 36, 58, 0.12);
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: "JetbrainsMonoBold", monospace;
+      font-size: clamp(2rem, 5vw, 3.4rem);
+    }
+
+    .subtitle {
+      margin: 8px 0 26px;
+      color: var(--text-muted);
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-bottom: 12px;
+    }
+
+    .register-device {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin: 0 0 18px;
+    }
+
+    input[type="text"] {
+      min-width: 190px;
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      background: #fff8fb;
+      font: inherit;
+    }
+
+    input:focus {
+      outline: 2px solid rgba(77, 184, 235, 0.35);
+      border-color: var(--light-blue);
+    }
+
+    input[type="range"] {
+      accent-color: var(--light-blue);
+      vertical-align: middle;
+    }
+
+    button {
+      position: relative;
+      z-index: 1;
+      padding: 10px 20px;
+      border: 0;
+      border-radius: 10px;
+      overflow: hidden;
+      color: white;
+      background: var(--light-blue);
+      cursor: pointer;
+      font: inherit;
+      transition: background-color 0.4s ease;
+    }
+
+    button::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: var(--cotton-candy);
+      background-size: 200% 100%;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      animation: cotton-candy-scroll 3s linear infinite;
+    }
+
+    button:hover { background-color: transparent; }
+    button:hover::before { opacity: 1; }
+
+    #message {
+      min-height: 1.5em;
+      margin: 8px 0 20px;
+      color: var(--text-muted);
+    }
+
+    #devices {
+      display: grid;
+      gap: 16px;
+      text-align: left;
+    }
+
+    .device-card {
+      min-width: 0;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--light-pink);
+      box-shadow: 0 4px 14px rgba(41, 36, 58, 0.08);
+    }
+
+    .device-card legend {
+      padding: 0 8px;
+      color: var(--text);
+      font-family: "JetbrainsMonoBold", monospace;
+    }
+
+    .status-line {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .status-value { color: var(--text-muted); }
+
+    .device-card hr {
+      margin: 16px 0;
+      border: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .action-control {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--hero-soft);
+    }
+
+    .action-control label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .action-control input[type="text"] { min-width: 110px; width: 150px; }
+    .action-control button, .actions > button { padding: 8px 14px; }
+
+    .output-card {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 8px;
+      color: var(--light-pink);
+      background: var(--text);
+      text-align: left;
+    }
+
+    .output-card h2 {
+      margin: 0 0 10px;
+      color: white;
+      font-size: 1rem;
+    }
+
+    #output {
+      min-height: 1.5em;
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font: inherit;
+    }
+
+    @media (max-width: 700px) {
+      header ul { width: 100%; margin-top: 10px; text-align: left; }
+      .hero { align-items: start; padding-top: 34px; }
+      .initiative-panel { padding: 20px 14px; }
+      .toolbar { align-items: stretch; flex-direction: column; }
+      .toolbar button { width: 100%; }
+      .register-device { align-items: stretch; flex-direction: column; }
+      .register-device button { width: 100%; }
+      .action-control { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="cotton-candy-text" id="href-logo" href="https://gatoware.xyz/">gatoware.xyz</a>
+    <ul>
+      <li><a class="cotton-candy-text-hover" data-text="Atlas" href="https://gatoware.xyz/atlas">Atlas</a></li>
+      <li><a class="cotton-candy-text-hover" data-text="GatoLang" href="https://gatoware.xyz/gatolang">GatoLang</a></li>
+      <li><a class="cotton-candy-text-hover" data-text="MDG" href="https://gatoware.xyz/mdg">MDG</a></li>
+      <li><a class="cotton-candy-text-hover" data-text="Synapse" href="https://gatoware.xyz/synapse">Synapse</a></li>
+    </ul>
+    <hr>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div id="particles-js"></div>
+
+      <div class="initiative-panel">
+        <h1 class="cotton-candy-text">Initiative</h1>
+        <p class="subtitle">Control all your Initiative devices.</p>
+
+        <div class="toolbar">
+          <button id="healthButton">Check Health</button>
+        </div>
+
+        <form class="register-device" id="registerForm">
+          <input id="deviceName" type="text" placeholder="Device name" required>
+          <input id="scriptFile" type="file" accept=".py,text/x-python" required>
+          <button type="submit">Register Device</button>
+        </form>
+
+        <p id="message">Not connected.</p>
+        <div id="devices"></div>
+
+        <div class="output-card">
+          <h2>Output</h2>
+          <pre id="output">Nothing yet.</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const message = document.querySelector("#message");
+    const devices = document.querySelector("#devices");
+    const output = document.querySelector("#output");
+    const registerForm = document.querySelector("#registerForm");
+    const deviceName = document.querySelector("#deviceName");
+    const scriptFile = document.querySelector("#scriptFile");
+
+    document.querySelector("#healthButton").addEventListener("click", checkHealth);
+    registerForm.addEventListener("submit", registerDevice);
+    loadDevices();
+
+    async function request(path, body) {
+      const options = body === undefined ? {} : {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: body
+      };
+      const response = await fetch(path, options);
+      return response.text();
+    }
+
+    async function checkHealth() {
+      try {
+        message.textContent = await request("/initiative/health");
+      } catch (error) {
+        message.textContent = "Could not connect: " + error.message;
+      }
+    }
+
+    async function loadDevices() {
+      devices.replaceChildren();
+      try {
+        const response = await request("/initiative/devices");
+        const lines = response.trim() ? response.trim().split(/\r?\n/) : [];
+        for (const line of lines) {
+          const separator = line.lastIndexOf(":");
+          addDevice(line.substring(0, separator), line.substring(separator + 1));
+        }
+        message.textContent = "Loaded " + lines.length + " device(s).";
+      } catch (error) {
+        message.textContent = "Could not load devices: " + error.message;
+      }
+    }
+
+    async function registerDevice(event) {
+      event.preventDefault();
+      const name = deviceName.value.trim();
+      const file = scriptFile.files[0];
+      if(!name || !file) return;
+
+      try {
+        const response = await fetch("/initiative/devices/registerExternal?name="
+            + encodeURIComponent(name) + "&filename=" + encodeURIComponent(file.name), {
+          method: "POST",
+          body: file
+        });
+        const text = await response.text();
+        if(!response.ok) throw new Error(text || "Could not register device.");
+        output.textContent = text;
+        registerForm.reset();
+        loadDevices();
+      } catch (error) {
+        output.textContent = "Could not register device: " + error.message;
+      }
+    }
+
+    function addDevice(name, type) {
+      const panel = document.createElement("fieldset");
+      const title = document.createElement("legend");
+      const statusLine = document.createElement("div");
+      const status = document.createElement("span");
+      const refresh = document.createElement("button");
+      const actions = document.createElement("div");
+
+      panel.className = "device-card";
+      statusLine.className = "status-line";
+      status.className = "status-value";
+      actions.className = "actions";
+      title.textContent = name + " (" + type + ")";
+      status.textContent = "Loading status...";
+      refresh.textContent = "Refresh Status";
+      refresh.addEventListener("click", () => loadStatus(name, status));
+
+      statusLine.append(document.createTextNode("Status: "), status, refresh);
+      panel.append(title, statusLine, document.createElement("hr"), actions);
+      devices.append(panel);
+
+      loadStatus(name, status);
+      loadActions(name, actions, status);
+    }
+
+    async function loadStatus(name, status) {
+      try {
+        status.textContent = await request("/initiative/devices/status", name);
+      } catch (error) {
+        status.textContent = "Unavailable: " + error.message;
+      }
+    }
+
+    async function loadActions(deviceName, container, status) {
+      try {
+        const response = await request("/initiative/devices/actions", deviceName);
+        const lines = response.trim() ? response.trim().split(/\r?\n/) : [];
+        for (const line of lines) {
+          const fields = line.split("\t");
+          const actionName = fields.shift();
+          const arguments = fields.map(field => {
+            const parts = field.split(":");
+            return { name: parts[0], type: parts[1], minimum: parts[2], maximum: parts[3] };
+          });
+          addAction(deviceName, actionName, arguments, container, status);
+        }
+      } catch (error) {
+        container.textContent = "Could not load actions: " + error.message;
+      }
+    }
+
+    function addAction(deviceName, actionName, arguments, container, status) {
+      if (arguments.length === 0) {
+        const button = document.createElement("button");
+        button.textContent = actionName;
+        button.addEventListener("click", () => execute(deviceName, actionName, [], status));
+        container.append(button);
+        return;
+      }
+
+      if (arguments.length === 1 && arguments[0].minimum !== undefined) {
+        const form = document.createElement("form");
+        const argument = arguments[0];
+        const label = document.createElement("label");
+        const slider = document.createElement("input");
+        const value = document.createElement("span");
+        const button = document.createElement("button");
+
+        form.className = "action-control";
+        label.textContent = actionName + " (" + argument.name + ") ";
+        slider.type = "range";
+        slider.min = argument.minimum;
+        slider.max = argument.maximum;
+        slider.value = argument.minimum;
+        value.textContent = slider.value;
+        slider.addEventListener("input", () => value.textContent = slider.value);
+        button.type = "submit";
+        button.textContent = actionName;
+        form.addEventListener("submit", event => {
+          event.preventDefault();
+          execute(deviceName, actionName, [slider.value], status);
+        });
+
+        label.append(slider, value);
+        form.append(label, button);
+        container.append(form);
+        return;
+      }
+
+      const form = document.createElement("form");
+      const label = document.createElement("strong");
+      const inputs = [];
+      form.className = "action-control";
+      label.textContent = actionName + " ";
+      form.append(label);
+
+      for (const argument of arguments) {
+        const argumentLabel = document.createElement("label");
+        const input = document.createElement("input");
+        argumentLabel.textContent = argument.name + " ";
+        input.type = "text";
+        inputs.push(input);
+        argumentLabel.append(input);
+        form.append(argumentLabel);
+      }
+
+      const button = document.createElement("button");
+      button.type = "submit";
+      button.textContent = "Run";
+      form.append(button);
+      form.addEventListener("submit", event => {
+        event.preventDefault();
+        execute(deviceName, actionName, inputs.map(input => input.value), status);
+      });
+      container.append(form);
+    }
+
+    async function execute(deviceName, actionName, arguments, status) {
+      const body = [deviceName, actionName].concat(arguments).join("\n");
+      try {
+        output.textContent = await request("/initiative/devices/execute", body);
+        loadStatus(deviceName, status);
+      } catch (error) {
+        output.textContent = "Could not execute action: " + error.message;
+      }
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script>
+    const pink = getComputedStyle(document.documentElement).getPropertyValue("--pink").trim();
+    particlesJS("particles-js", {
+      particles: {
+        number: { value: 80, density: { enable: true, value_area: 800 } },
+        color: { value: pink },
+        shape: { type: "circle" },
+        opacity: { value: 0.85 },
+        size: { value: 3, random: true },
+        line_linked: { enable: true, distance: 150, color: pink, opacity: 0.7, width: 1 },
+        move: { enable: true, speed: 2, direction: "none", random: false, straight: false, out_mode: "out" }
+      },
+      interactivity: {
+        detect_on: "window",
+        events: {
+          onhover: { enable: true, mode: "repulse" },
+          onclick: { enable: true, mode: "push" },
+          resize: true
+        },
+        modes: {
+          grab: { distance: 140, line_linked: { opacity: 1 } },
+          repulse: { distance: 180, duration: 0.4 },
+          push: { particles_nb: 4 }
+        }
+      },
+      retina_detect: true
+    });
+  </script>
+</body>
+</html>

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,7 +16,15 @@ import xyz.gatoware.initiative.devices.Device;
 import xyz.gatoware.initiative.devices.External;
 
 public class SaveLoadDevices {
-    public static int save(final File file) throws IOException {
+    private static final File DEFAULT_FILE = new File(System.getProperty("user.home"),
+            ".initiative/Initiative.devices");
+
+    public static File getDefaultFile() {
+        return DEFAULT_FILE;
+    }
+
+    public static int save() throws IOException {
+        final File file = getDefaultFile();
         final List<SavedExternal> savedDevices = new ArrayList<SavedExternal>();
         for (final Device device : Initiative.INSTANCE.registry.getDevices()) {
             if (device instanceof External) {
@@ -24,14 +33,18 @@ public class SaveLoadDevices {
             }
         }
 
+        final File parent = file.getParentFile();
+        if (parent != null) {
+            Files.createDirectories(parent.toPath());
+        }
         try (ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(file))) {
             stream.writeObject(savedDevices);
         }
         return savedDevices.size();
     }
 
-    public static List<External> load(final File file)
-            throws IOException, ClassNotFoundException {
+    public static List<External> load() throws IOException, ClassNotFoundException {
+        final File file = getDefaultFile();
         final List<External> devices;
         try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(file))) {
             final Object saved = stream.readObject();
