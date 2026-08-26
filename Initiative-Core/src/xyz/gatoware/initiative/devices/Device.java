@@ -27,7 +27,7 @@ public abstract class Device {
     }
 
     /** Returns a device-specific snapshot of its current state. */
-    public abstract Object status();
+    public abstract String status();
 
     /** Returns the actions currently available on this device. */
     public abstract List<Action> listActions();

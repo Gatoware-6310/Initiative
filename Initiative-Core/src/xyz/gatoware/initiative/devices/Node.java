@@ -89,13 +89,13 @@ public class Node extends Device {
     }
 
     @Override
-    public Object status() {
+    public String status() {
         final Map<String, Object> state = new LinkedHashMap<String, Object>();
         state.put("id", id);
         state.put("address", address);
         state.put("reachable", Boolean.valueOf(ping()));
         state.put("capabilities", getCapabilities());
-        return Collections.unmodifiableMap(state);
+        return Collections.unmodifiableMap(state).toString();
     }
 
     @Override

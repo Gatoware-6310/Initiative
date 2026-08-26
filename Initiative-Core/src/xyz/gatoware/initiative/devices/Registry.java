@@ -8,15 +8,28 @@ import java.util.Objects;
 public class Registry {
 	private final CopyOnWriteArrayList<Device> deviceList = new CopyOnWriteArrayList<Device>();
 
-	public void register(final Device device) {
+	public void registerDevice(final Device device) {
+		if(exists(device.getName())) throw new IllegalArgumentException("You cannot register a device that already exists!");
 		deviceList.add(Objects.requireNonNull(device, "A device is required."));
 	}
 
-	public void remove(final Device device) {
+	public void removeDevice(final Device device) {
 		deviceList.remove(device);
 	}
 
-	public List<Device> getList() {
+	public List<Device> getDevices() {
 		return Collections.unmodifiableList(new CopyOnWriteArrayList<Device>(deviceList));
+	}
+	
+	public Device getDeviceFromName(final String name) {
+	    return deviceList.stream()
+	            .filter(d -> d.getName().equals(name))
+	            .findFirst()
+	            .orElse(null);
+	}
+	
+	public boolean exists(String name) {
+	    return deviceList.stream()
+	            .anyMatch(d -> d.getName().equals(name));
 	}
 }

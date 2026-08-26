@@ -51,7 +51,7 @@ public final class External extends Device {
 
     /** Returns the script output from {@code python3 script.py status}. */
     @Override
-    public Object status() {
+    public String status() {
         return executePythonScript(scriptPath, "status").trim();
     }
 

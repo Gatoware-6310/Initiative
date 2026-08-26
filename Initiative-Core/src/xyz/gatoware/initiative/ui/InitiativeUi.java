@@ -9,12 +9,7 @@ import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,8 +33,8 @@ import javax.swing.Timer;
 import xyz.gatoware.initiative.Initiative;
 import xyz.gatoware.initiative.actions.Action;
 import xyz.gatoware.initiative.actions.ActionArgument;
-import xyz.gatoware.initiative.devices.Device;
 import xyz.gatoware.initiative.devices.External;
+import xyz.gatoware.utils.serialization.SaveLoadDevices;
 
 /** A small Swing interface for registering and controlling Python externals. */
 public final class InitiativeUi extends JFrame {
@@ -127,7 +122,11 @@ public final class InitiativeUi extends JFrame {
     }
 
     private void addRegistration(final Registration registration) {
-        Initiative.INSTANCE.registerDevice(registration.external);
+        Initiative.INSTANCE.registry.registerDevice(registration.external);
+        addRegistrationToUi(registration);
+    }
+
+    private void addRegistrationToUi(final Registration registration) {
         devices.add(createDevicePanel(registration));
         devices.revalidate();
         devices.repaint();
@@ -141,18 +140,10 @@ public final class InitiativeUi extends JFrame {
             return;
         }
 
-        final List<SavedExternal> savedDevices = new ArrayList<SavedExternal>();
-        for (final Device device : Initiative.INSTANCE.getDevices()) {
-            if (device instanceof External) {
-                final External external = (External) device;
-                savedDevices.add(new SavedExternal(external.getName(), external.getScriptPath()));
-            }
-        }
-
         final File file = chooser.getSelectedFile();
-        try (ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(file))) {
-            stream.writeObject(savedDevices);
-            appendOutput("Saved " + savedDevices.size() + " device(s) to " + file.getName() + ".");
+        try {
+            final int savedDeviceCount = SaveLoadDevices.save(file);
+            appendOutput("Saved " + savedDeviceCount + " device(s) to " + file.getName() + ".");
         } catch (final IOException exception) {
             appendOutput("Could not save devices: " + rootMessage(exception));
         }
@@ -168,10 +159,8 @@ public final class InitiativeUi extends JFrame {
         new SwingWorker<List<Registration>, Void>() {
             @Override
             protected List<Registration> doInBackground() throws Exception {
-                final List<SavedExternal> savedDevices = readDevices(file);
                 final List<Registration> registrations = new ArrayList<Registration>();
-                for (final SavedExternal saved : savedDevices) {
-                    final External external = new External(saved.name, saved.scriptPath);
+                for (final External external : SaveLoadDevices.load(file)) {
                     registrations.add(new Registration(external, external.capabilities()));
                 }
                 return registrations;
@@ -181,9 +170,9 @@ public final class InitiativeUi extends JFrame {
             protected void done() {
                 try {
                     final List<Registration> registrations = get();
-                    clearRegisteredExternals();
+                    clearDisplayedExternals();
                     for (final Registration registration : registrations) {
-                        addRegistration(registration);
+                        addRegistrationToUi(registration);
                     }
                     appendOutput("Loaded " + registrations.size() + " device(s) from " + file.getName() + ".");
                 } catch (final Exception exception) {
@@ -193,29 +182,7 @@ public final class InitiativeUi extends JFrame {
         }.execute();
     }
 
-    private List<SavedExternal> readDevices(final File file) throws IOException, ClassNotFoundException {
-        try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(file))) {
-            final Object saved = stream.readObject();
-            if (!(saved instanceof List<?>)) {
-                throw new IOException("The selected file does not contain an Initiative device list.");
-            }
-            final List<SavedExternal> devices = new ArrayList<SavedExternal>();
-            for (final Object entry : (List<?>) saved) {
-                if (!(entry instanceof SavedExternal)) {
-                    throw new IOException("The selected file contains an invalid device entry.");
-                }
-                devices.add((SavedExternal) entry);
-            }
-            return devices;
-        }
-    }
-
-    private void clearRegisteredExternals() {
-        for (final Device device : Initiative.INSTANCE.getDevices()) {
-            if (device instanceof External) {
-                Initiative.INSTANCE.removeDevice(device);
-            }
-        }
+    private void clearDisplayedExternals() {
         statusLabels.clear();
         devices.removeAll();
         devices.revalidate();
@@ -364,16 +331,16 @@ public final class InitiativeUi extends JFrame {
     }
 
     private void refreshStatus(final External external, final JLabel label) {
-        new SwingWorker<Object, Void>() {
+        new SwingWorker<String, Void>() {
             @Override
-            protected Object doInBackground() {
+            protected String doInBackground() {
                 return external.status();
             }
 
             @Override
             protected void done() {
                 try {
-                    label.setText("Status: " + String.valueOf(get()).replaceAll("\\s+", " "));
+                    label.setText("Status: " + get().replaceAll("\\s+", " "));
                 } catch (final Exception exception) {
                     label.setText("Status unavailable: " + rootMessage(exception));
                 }
@@ -399,15 +366,4 @@ public final class InitiativeUi extends JFrame {
         }
     }
 
-    private static final class SavedExternal implements Serializable {
-        private static final long serialVersionUID = 1L;
-
-        private final String name;
-        private final String scriptPath;
-
-        private SavedExternal(final String name, final String scriptPath) {
-            this.name = name;
-            this.scriptPath = scriptPath;
-        }
-    }
 }
