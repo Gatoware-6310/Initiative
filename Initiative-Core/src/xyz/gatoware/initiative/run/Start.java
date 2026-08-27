@@ -8,6 +8,7 @@ import xyz.gatoware.initiative.Initiative;
 
 public class Start {
 	public static void main(String[] args) throws ClassNotFoundException, IOException {
+		System.setProperty("java.net.preferIPv4Stack", "true");
 		Initiative.INSTANCE.initInitiative();
 		//InitiativeUi.main(args);
 	}

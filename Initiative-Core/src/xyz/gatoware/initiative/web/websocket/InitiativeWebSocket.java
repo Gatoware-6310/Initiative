@@ -25,7 +25,7 @@ public class InitiativeWebSocket extends WebSocketServer {
 	private final Map<String, Boolean> reconnectingNodes = new ConcurrentHashMap<String, Boolean>();
 
 	public InitiativeWebSocket() {
-		super(new InetSocketAddress(1232));
+		super(new InetSocketAddress("0.0.0.0", 1232));
 	}
 
 	public void connectNode(Node node) throws IOException {
