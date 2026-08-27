@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.util.Objects;
 
 import xyz.gatoware.initiative.actions.Action;
+import xyz.gatoware.initiative.devices.Device;
+import xyz.gatoware.initiative.devices.Node;
 import xyz.gatoware.initiative.devices.Registry;
 import xyz.gatoware.initiative.web.api.HTTPServer;
+import xyz.gatoware.initiative.web.websocket.InitiativeWebSocket;
 import xyz.gatoware.utils.serialization.SaveLoadDevices;
 
 public enum Initiative {
@@ -13,17 +16,32 @@ public enum Initiative {
 	
 	public Registry registry;
 	public HTTPServer httpServer;
+	public InitiativeWebSocket webSocket;
 	
 	public void initInitiative() {
 		registry = new Registry();
+		webSocket = new InitiativeWebSocket();
+		webSocket.start();
 		try {
-			SaveLoadDevices.load();
+			if(SaveLoadDevices.getDefaultFile().isFile()) {
+				for(Device device : SaveLoadDevices.load()) {
+					if(device instanceof Node) {
+						webSocket.reconnectNode((Node) device);
+					}
+				}
+			}
 			httpServer = new HTTPServer();
 		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
-			
-			System.out.println("HTTP Server failed, or the Initiative directory/devices file was not found!");
 		}
+	}
+
+	public Node registerNode(final String name, final String ip) throws IOException {
+		if(registry.exists(name)) throw new IllegalArgumentException("You cannot register a device that already exists!");
+		final Node node = new Node(name, ip);
+		webSocket.connectNode(node);
+		registry.registerNode(node);
+		return node;
 	}
 
 	public String executeAction(final Action action, final Object... arguments) {

@@ -33,6 +33,7 @@ import javax.swing.Timer;
 import xyz.gatoware.initiative.Initiative;
 import xyz.gatoware.initiative.actions.Action;
 import xyz.gatoware.initiative.actions.ActionArgument;
+import xyz.gatoware.initiative.devices.Device;
 import xyz.gatoware.initiative.devices.External;
 import xyz.gatoware.utils.serialization.SaveLoadDevices;
 
@@ -122,7 +123,7 @@ public final class InitiativeUi extends JFrame {
     }
 
     private void addRegistration(final Registration registration) {
-        Initiative.INSTANCE.registry.registerDevice(registration.external);
+        Initiative.INSTANCE.registry.registerExternal(registration.external);
         addRegistrationToUi(registration);
     }
 
@@ -160,8 +161,11 @@ public final class InitiativeUi extends JFrame {
             @Override
             protected List<Registration> doInBackground() throws Exception {
                 final List<Registration> registrations = new ArrayList<Registration>();
-                for (final External external : SaveLoadDevices.load()) {
-                    registrations.add(new Registration(external, external.capabilities()));
+                for (final Device device : SaveLoadDevices.load()) {
+                    if (device instanceof External) {
+                        final External external = (External) device;
+                        registrations.add(new Registration(external, external.capabilities()));
+                    }
                 }
                 return registrations;
             }

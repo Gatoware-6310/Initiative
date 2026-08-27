@@ -14,6 +14,7 @@ import java.util.List;
 import xyz.gatoware.initiative.Initiative;
 import xyz.gatoware.initiative.devices.Device;
 import xyz.gatoware.initiative.devices.External;
+import xyz.gatoware.initiative.devices.Node;
 
 public class SaveLoadDevices {
     private static final File DEFAULT_FILE = new File(System.getProperty("user.home"),
@@ -25,11 +26,14 @@ public class SaveLoadDevices {
 
     public static int save() throws IOException {
         final File file = getDefaultFile();
-        final List<SavedExternal> savedDevices = new ArrayList<SavedExternal>();
+        final List<Serializable> savedDevices = new ArrayList<Serializable>();
         for (final Device device : Initiative.INSTANCE.registry.getDevices()) {
             if (device instanceof External) {
                 final External external = (External) device;
                 savedDevices.add(new SavedExternal(external.getName(), external.getScriptPath()));
+            } else if (device instanceof Node) {
+                final Node node = (Node) device;
+                savedDevices.add(new SavedNode(node.getName(), node.getIp()));
             }
         }
 
@@ -43,32 +47,40 @@ public class SaveLoadDevices {
         return savedDevices.size();
     }
 
-    public static List<External> load() throws IOException, ClassNotFoundException {
+    public static List<Device> load() throws IOException, ClassNotFoundException {
         final File file = getDefaultFile();
-        final List<External> devices;
+        final List<Device> devices;
         try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(file))) {
             final Object saved = stream.readObject();
             if (!(saved instanceof List<?>)) {
                 throw new IOException("The selected file does not contain an Initiative device list.");
             }
 
-            devices = new ArrayList<External>();
+            devices = new ArrayList<Device>();
             for (final Object entry : (List<?>) saved) {
-                if (!(entry instanceof SavedExternal)) {
+                if (entry instanceof SavedExternal) {
+                    final SavedExternal external = (SavedExternal) entry;
+                    devices.add(new External(external.name, external.scriptPath));
+                } else if (entry instanceof SavedNode) {
+                    final SavedNode node = (SavedNode) entry;
+                    devices.add(new Node(node.name, node.ip));
+                } else {
                     throw new IOException("The selected file contains an invalid device entry.");
                 }
-                final SavedExternal external = (SavedExternal) entry;
-                devices.add(new External(external.name, external.scriptPath));
             }
         }
 
         for (final Device device : Initiative.INSTANCE.registry.getDevices()) {
-            if (device instanceof External) {
-            	Initiative.INSTANCE.registry.removeDevice(device);
+            if (device instanceof External || device instanceof Node) {
+                Initiative.INSTANCE.registry.removeDevice(device);
             }
         }
-        for (final External device : devices) {
-        	Initiative.INSTANCE.registry.registerDevice(device);
+        for (final Device device : devices) {
+            if (device instanceof External) {
+                Initiative.INSTANCE.registry.registerExternal((External) device);
+            } else {
+                Initiative.INSTANCE.registry.registerNode((Node) device);
+            }
         }
         return devices;
     }
@@ -82,6 +94,18 @@ public class SaveLoadDevices {
         private SavedExternal(final String name, final String scriptPath) {
             this.name = name;
             this.scriptPath = scriptPath;
+        }
+    }
+
+    private static final class SavedNode implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private final String name;
+        private final String ip;
+
+        private SavedNode(final String name, final String ip) {
+            this.name = name;
+            this.ip = ip;
         }
     }
 }

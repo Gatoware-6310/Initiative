@@ -8,9 +8,17 @@ import java.util.Objects;
 public class Registry {
 	private final CopyOnWriteArrayList<Device> deviceList = new CopyOnWriteArrayList<Device>();
 
-	public void registerDevice(final Device device) {
+	private void registerDevice(final Device device) {
 		if(exists(device.getName())) throw new IllegalArgumentException("You cannot register a device that already exists!");
 		deviceList.add(Objects.requireNonNull(device, "A device is required."));
+	}
+
+	public void registerExternal(final External external) {
+		registerDevice(external);
+	}
+
+	public void registerNode(final Node node) {
+		registerDevice(node);
 	}
 
 	public void removeDevice(final Device device) {

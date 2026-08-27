@@ -302,6 +302,23 @@
     .action-control input[type="text"] { min-width: 110px; width: 150px; }
     .action-control button, .actions > button { padding: 8px 14px; }
 
+    .python-control {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .python-control textarea {
+      min-height: 120px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      background: #fff8fb;
+      font: inherit;
+      resize: vertical;
+    }
+
     .output-card {
       margin-top: 20px;
       padding: 16px;
@@ -361,10 +378,16 @@
           <button id="healthButton">Check Health</button>
         </div>
 
-        <form class="register-device" id="registerForm">
-          <input id="deviceName" type="text" placeholder="Device name" required>
+        <form class="register-device" id="registerExternalForm">
+          <input id="externalName" type="text" placeholder="External device name" required>
           <input id="scriptFile" type="file" accept=".py,text/x-python" required>
-          <button type="submit">Register Device</button>
+          <button type="submit">Register External</button>
+        </form>
+
+        <form class="register-device" id="registerNodeForm">
+          <input id="nodeName" type="text" placeholder="Node name" required>
+          <input id="nodeIp" type="text" placeholder="Node IP" required>
+          <button type="submit">Register Node</button>
         </form>
 
         <p id="message">Not connected.</p>
@@ -382,12 +405,16 @@
     const message = document.querySelector("#message");
     const devices = document.querySelector("#devices");
     const output = document.querySelector("#output");
-    const registerForm = document.querySelector("#registerForm");
-    const deviceName = document.querySelector("#deviceName");
+    const registerExternalForm = document.querySelector("#registerExternalForm");
+    const registerNodeForm = document.querySelector("#registerNodeForm");
+    const externalName = document.querySelector("#externalName");
     const scriptFile = document.querySelector("#scriptFile");
+    const nodeName = document.querySelector("#nodeName");
+    const nodeIp = document.querySelector("#nodeIp");
 
     document.querySelector("#healthButton").addEventListener("click", checkHealth);
-    registerForm.addEventListener("submit", registerDevice);
+    registerExternalForm.addEventListener("submit", registerExternal);
+    registerNodeForm.addEventListener("submit", registerNode);
     loadDevices();
 
     async function request(path, body) {
@@ -423,9 +450,9 @@
       }
     }
 
-    async function registerDevice(event) {
+    async function registerExternal(event) {
       event.preventDefault();
-      const name = deviceName.value.trim();
+      const name = externalName.value.trim();
       const file = scriptFile.files[0];
       if(!name || !file) return;
 
@@ -438,10 +465,31 @@
         const text = await response.text();
         if(!response.ok) throw new Error(text || "Could not register device.");
         output.textContent = text;
-        registerForm.reset();
+        registerExternalForm.reset();
         loadDevices();
       } catch (error) {
-        output.textContent = "Could not register device: " + error.message;
+        output.textContent = "Could not register external: " + error.message;
+      }
+    }
+
+    async function registerNode(event) {
+      event.preventDefault();
+      const name = nodeName.value.trim();
+      const ip = nodeIp.value.trim();
+      if(!name || !ip) return;
+
+      try {
+        const response = await fetch("/initiative/devices/registerNode?name="
+            + encodeURIComponent(name) + "&ip=" + encodeURIComponent(ip), {
+          method: "POST"
+        });
+        const text = await response.text();
+        if(!response.ok) throw new Error(text || "Could not register node.");
+        output.textContent = text;
+        registerNodeForm.reset();
+        loadDevices();
+      } catch (error) {
+        output.textContent = "Could not register node: " + error.message;
       }
     }
 
@@ -464,6 +512,7 @@
 
       statusLine.append(document.createTextNode("Status: "), status, refresh);
       panel.append(title, statusLine, document.createElement("hr"), actions);
+      if(type === "node") addPythonControl(name, panel, status);
       devices.append(panel);
 
       loadStatus(name, status);
@@ -570,6 +619,44 @@
       } catch (error) {
         output.textContent = "Could not execute action: " + error.message;
       }
+    }
+
+    function addPythonControl(deviceName, panel, status) {
+      const form = document.createElement("form");
+      const source = document.createElement("textarea");
+      const file = document.createElement("input");
+      const button = document.createElement("button");
+
+      form.className = "python-control";
+      source.placeholder = "Python code";
+      file.type = "file";
+      file.accept = ".py,text/x-python";
+      button.type = "submit";
+      button.textContent = "Run Python";
+
+      file.addEventListener("change", async () => {
+        if(file.files[0]) source.value = await file.files[0].text();
+      });
+      form.addEventListener("submit", async event => {
+        event.preventDefault();
+        if(!source.value.trim()) return;
+        try {
+          const response = await fetch("/initiative/devices/python", {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: deviceName + "\n" + source.value
+          });
+          const text = await response.text();
+          if(!response.ok) throw new Error(text || "Could not run Python.");
+          output.textContent = text;
+          loadStatus(deviceName, status);
+        } catch (error) {
+          output.textContent = "Could not run Python: " + error.message;
+        }
+      });
+
+      form.append(source, file, button);
+      panel.append(form);
     }
   </script>
 

@@ -39,7 +39,9 @@ public class HTTPServer implements HttpHandler {
 		server.createContext("/initiative/devices/status", this::deviceStatus);
 		server.createContext("/initiative/devices/actions", this::listActions);
 		server.createContext("/initiative/devices/execute", this::executeAction);
+		server.createContext("/initiative/devices/python", this::executePython);
 		server.createContext("/initiative/devices/registerExternal", this::registerExternal);
+		server.createContext("/initiative/devices/registerNode", this::registerNode);
 		
 		executor = Executors.newFixedThreadPool(8, runnable ->
 				new Thread(runnable, "initiative-http-server"));
@@ -106,6 +108,27 @@ public class HTTPServer implements HttpHandler {
 		sendResponse(response.isEmpty() ? "ok" : response, 200, exchange);
 	}
 
+	private void executePython(HttpExchange exchange) throws IOException {
+		String request = StringUtils.convertInputStreamToString(exchange.getRequestBody());
+		int separator = request.indexOf('\n');
+		if(separator < 1 || separator == request.length() - 1) {
+			sendResponse("A node name and Python source are required.", 400, exchange);
+			return;
+		}
+		Device device = Initiative.INSTANCE.registry.getDeviceFromName(request.substring(0, separator));
+		if(!(device instanceof Node)) {
+			sendResponse("That device is not a node.", 400, exchange);
+			return;
+		}
+		try {
+			sendResponse(((Node) device).executePython(request.substring(separator + 1)), 200, exchange);
+		} catch(IllegalArgumentException exception) {
+			sendResponse(exception.getMessage(), 400, exchange);
+		} catch(IllegalStateException exception) {
+			sendResponse(exception.getMessage(), 504, exchange);
+		}
+	}
+
 	private void registerExternal(HttpExchange exchange) throws IOException {
 		String name = getQueryValue(exchange, "name");
 		String filename = getQueryValue(exchange, "filename");
@@ -136,9 +159,34 @@ public class HTTPServer implements HttpHandler {
 
 		External external = new External(name, scriptPath.toString());
 		external.capabilities();
-		Initiative.INSTANCE.registry.registerDevice(external);
+		Initiative.INSTANCE.registry.registerExternal(external);
 		SaveLoadDevices.save();
 		sendResponse("Registered " + name + ".", 201, exchange);
+	}
+
+	private void registerNode(HttpExchange exchange) throws IOException {
+		String name = getQueryValue(exchange, "name");
+		String ip = getQueryValue(exchange, "ip");
+		if(name == null || name.trim().isEmpty() || ip == null || ip.trim().isEmpty()) {
+			sendResponse("A node name and IP are required.", 400, exchange);
+			return;
+		}
+		if(Initiative.INSTANCE.registry.exists(name)) {
+			sendResponse("A device with that name already exists.", 409, exchange);
+			return;
+		}
+
+		try {
+			Initiative.INSTANCE.registerNode(name, ip);
+			SaveLoadDevices.save();
+			sendResponse("Registered " + name + ".", 201, exchange);
+		} catch(IllegalArgumentException exception) {
+			sendResponse(exception.getMessage(), 400, exchange);
+		} catch(IllegalStateException exception) {
+			sendResponse(exception.getMessage(), 504, exchange);
+		} catch(IOException exception) {
+			sendResponse(exception.getMessage(), 502, exchange);
+		}
 	}
 
 	private String getQueryValue(HttpExchange exchange, String key) {
@@ -171,10 +219,6 @@ public class HTTPServer implements HttpHandler {
 		exchange.sendResponseHeaders(responseCode, responseBytes.length);
 		final OutputStream output = exchange.getResponseBody();
 		output.write(responseBytes);
-		
-		final String convertedInput = StringUtils.convertInputStreamToString(exchange.getRequestBody());
-		System.out.println(convertedInput.isEmpty() ? "No message attached to this request!\n" : convertedInput);
-		
 		output.close();
 	}
 	

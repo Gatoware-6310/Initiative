@@ -2,105 +2,78 @@ package xyz.gatoware.initiative.devices;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import org.java_websocket.WebSocket;
 
 import xyz.gatoware.initiative.actions.Action;
+import xyz.gatoware.initiative.actions.ActionArgument;
+import xyz.gatoware.initiative.actions.ActionTypes;
 
-/** A machine or embedded device running Initiative Node software. */
 public class Node extends Device {
-    private final String id;
-    private final String address;
-    private final List<String> capabilities;
-    private final List<Action> actions;
-    private volatile NodeConnection connection;
+    private final String ip;
+    private final LinkedBlockingQueue<String> replies = new LinkedBlockingQueue<String>();
+    private volatile WebSocket connection;
+    private volatile CountDownLatch connectionReady = new CountDownLatch(1);
 
-    public Node(final String id, final String address) {
-        this(id, id, address, Collections.<String>emptyList());
-    }
-
-    public Node(final String name, final String id, final String address,
-            final List<String> capabilities) {
+    public Node(final String name, final String ip) {
         super(name, DeviceType.NODE);
-        if (id == null || id.trim().isEmpty()) {
-            throw new IllegalArgumentException("A node ID is required.");
+        if (ip == null || ip.trim().isEmpty()) {
+            throw new IllegalArgumentException("A node IP is required.");
         }
-        if (address == null || address.trim().isEmpty()) {
-            throw new IllegalArgumentException("A node address is required.");
-        }
-        this.id = id;
-        this.address = address;
-        this.capabilities = new ArrayList<String>(
-                Objects.requireNonNull(capabilities, "Capabilities are required."));
-        this.actions = new ArrayList<Action>();
+        this.ip = ip;
     }
 
-    public String getId() {
-        return id;
+    public String getIp() {
+        return ip;
     }
 
-    public String getAddress() {
-        return address;
-    }
-
-    /** Reports whether the Core currently holds an open, persistent connection. */
-    public boolean ping() {
-        final NodeConnection activeConnection = connection;
+    public boolean isConnected() {
+        final WebSocket activeConnection = connection;
         return activeConnection != null && activeConnection.isOpen();
     }
 
-    /** Sends a predefined message through the node's existing connection. */
-    public void sendMessage(final String message) {
-        if (message == null) {
-            throw new IllegalArgumentException("A message is required.");
+    public void prepareConnection() {
+        connectionReady = new CountDownLatch(1);
+    }
+
+    public boolean awaitConnection() {
+        try {
+            return connectionReady.await(5, TimeUnit.SECONDS);
+        } catch (final InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while connecting node '" + getName() + ".", exception);
         }
-        requireConnection().sendMessage(message);
     }
 
-    /** Sends Python source to the node and returns the output it reports. */
-    public String sendRemoteScript(final String pythonSource, final Object... arguments) {
-        return requireConnection().executePython(pythonSource, arguments);
-    }
-
-    /**
-     * Attaches the already-established WebSocket or TCP session for this Node.
-     * Core networking infrastructure calls this after node authentication.
-     */
-    public void attachConnection(final NodeConnection connection) {
+    public void connect(final WebSocket connection) {
         this.connection = Objects.requireNonNull(connection, "A node connection is required.");
+        connectionReady.countDown();
     }
 
-    /** Removes a connection only when it is still the Node's active session. */
-    public void detachConnection(final NodeConnection connection) {
+    public void disconnect(final WebSocket connection) {
         if (this.connection == connection) {
             this.connection = null;
         }
     }
 
-    public List<String> getCapabilities() {
-        return Collections.unmodifiableList(capabilities);
-    }
-
-    /** Adds an action discovered or configured for this node. */
-    public void addAction(final Action action) {
-        actions.add(Objects.requireNonNull(action, "An action is required."));
+    public void reply(final String message) {
+        replies.offer(message);
     }
 
     @Override
     public String status() {
-        final Map<String, Object> state = new LinkedHashMap<String, Object>();
-        state.put("id", id);
-        state.put("address", address);
-        state.put("reachable", Boolean.valueOf(ping()));
-        state.put("capabilities", getCapabilities());
-        return Collections.unmodifiableMap(state).toString();
+        return request("STATUS").trim();
     }
 
     @Override
     public List<Action> listActions() {
-        return Collections.unmodifiableList(new ArrayList<Action>(actions));
+        return parseCapabilities(request("CAPABILITIES"));
     }
 
     @Override
@@ -108,38 +81,113 @@ public class Node extends Device {
         verifyTarget(action);
         action.validateArguments(arguments);
 
-        switch (action.getActionType()) {
-            case MESSAGE:
-                sendMessage(formatMessage(action.getContent(), arguments));
-                return "";
-            case REMOTE_SCRIPT:
-                return sendRemoteScript(action.getContent(), arguments);
-            case LOCAL_SCRIPT:
-                throw new UnsupportedOperationException(
-                        "Nodes cannot execute LOCAL_SCRIPT actions.");
-            default:
-                throw new IllegalArgumentException("Unsupported action type.");
+        if (action.getActionType() == ActionTypes.REMOTE_SCRIPT) {
+            return request("PYTHON " + action.getContent());
         }
+        if (action.getActionType() != ActionTypes.MESSAGE) {
+            throw new UnsupportedOperationException("Nodes execute MESSAGE and REMOTE_SCRIPT actions.");
+        }
+
+        final StringBuilder message = new StringBuilder(action.getContent());
+        for (final Object argument : arguments) {
+            message.append(' ').append(argument);
+        }
+        return request(message.toString());
     }
 
-    private NodeConnection requireConnection() {
-        final NodeConnection activeConnection = connection;
+    public String executePython(final String source) {
+        if(source == null || source.trim().isEmpty()) {
+            throw new IllegalArgumentException("Python source is required.");
+        }
+        return request("PYTHON " + source);
+    }
+
+    private synchronized String request(final String message) {
+        final WebSocket activeConnection = connection;
         if (activeConnection == null || !activeConnection.isOpen()) {
-            throw new IllegalStateException("Node '" + id + "' has no active connection.");
+            throw new IllegalStateException("Node '" + getName() + "' is not connected.");
         }
-        return activeConnection;
+        replies.clear();
+        activeConnection.send(message);
+        try {
+            final String reply = replies.poll(5, TimeUnit.SECONDS);
+            if (reply == null) {
+                throw new IllegalStateException("Node '" + getName() + "' did not reply to " + message + ".");
+            }
+            return reply;
+        } catch (final InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while waiting for node '" + getName() + ".", exception);
+        }
     }
 
-    private String formatMessage(final String message, final Object... arguments) {
-        return arguments.length == 0 ? message : String.format(message, arguments);
+    private List<Action> parseCapabilities(final String output) {
+        final List<Action> actions = new ArrayList<Action>();
+        for (final String rawLine : output.split("\\R")) {
+            final String line = rawLine.trim();
+            if (!line.isEmpty() && !line.startsWith("#")) {
+                actions.add(parseCapability(line));
+            }
+        }
+        return Collections.unmodifiableList(actions);
+    }
+
+    private Action parseCapability(final String line) {
+        final String[] fields = line.split("\\t", -1);
+        final String command = fields[0].trim();
+        if (command.isEmpty()) {
+            throw new IllegalArgumentException("A capability command is required.");
+        }
+
+        final List<ActionArgument> arguments = new ArrayList<ActionArgument>();
+        for (int index = 1; index < fields.length; index++) {
+            arguments.add(parseArgument(fields[index].trim()));
+        }
+        return Action.message(command, this, command, arguments);
+    }
+
+    private ActionArgument parseArgument(final String declaration) {
+        final String[] fields = declaration.split(":", -1);
+        if (fields.length < 2 || fields[0].trim().isEmpty() || fields[1].trim().isEmpty()) {
+            throw new IllegalArgumentException("Invalid capability argument '" + declaration + "'.");
+        }
+
+        final String name = fields[0].trim();
+        final Class<?> type = resolveType(fields[1].trim());
+        if (type != Integer.class) {
+            if (fields.length != 2) {
+                throw new IllegalArgumentException("Only Integer capability arguments may declare a range.");
+            }
+            return new ActionArgument(name, type);
+        }
+        if (fields.length != 4) {
+            throw new IllegalArgumentException("Integer capability argument '" + name
+                    + "' must declare minimum and maximum values.");
+        }
+        try {
+            return new ActionArgument(name, Integer.valueOf(fields[2].trim()),
+                    Integer.valueOf(fields[3].trim()));
+        } catch (final NumberFormatException exception) {
+            throw new IllegalArgumentException("Invalid Integer range in '" + declaration + "'.", exception);
+        }
+    }
+
+    private Class<?> resolveType(final String name) {
+        switch (Objects.requireNonNull(name).toLowerCase(Locale.ROOT)) {
+            case "string": return String.class;
+            case "integer":
+            case "int": return Integer.class;
+            case "long": return Long.class;
+            case "double": return Double.class;
+            case "boolean":
+            case "bool": return Boolean.class;
+            default: throw new IllegalArgumentException("Unsupported capability argument type '" + name + "'.");
+        }
     }
 
     private void verifyTarget(final Action action) {
-        if (action == null) {
-            throw new IllegalArgumentException("An action is required.");
-        }
-        if (action.getTarget() != this) {
-            throw new IllegalArgumentException("The action does not target this device.");
+        if (action == null || action.getTarget() != this) {
+            throw new IllegalArgumentException("The action does not target this node.");
         }
     }
 }
