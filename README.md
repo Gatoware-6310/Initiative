@@ -2,6 +2,7 @@
 Initiative is a local, developer-first and open source framework for monitoring, controlling, and interacting with all kinds of devices and systems through one unified interface.
 
 Here's an AI written README because I'm really tired, I promise I mostly wrote this all myself though (and that short description above, cool right?)
+--
 
 Initiative is a fully local home automation framework designed to make it easy to connect, control, and build your own smart devices.
 
