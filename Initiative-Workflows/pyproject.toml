@@ -1,0 +1,26 @@
+[project]
+name = "initiative-workflows"
+version = "0.1.0"
+description = "Lightweight asyncio Python service hosting Lua workflows for Initiative"
+requires-python = ">=3.11"
+dependencies = [
+    "aiohttp>=3.10,<4",
+    "lupa>=2.6,<3",
+]
+
+[project.scripts]
+initiative-workflows = "initiative_workflows.main:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["initiative_workflows*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F"]

@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Initiative Workflows</title>
+  <style>
+    @font-face {
+      font-family: "JetbrainsMono";
+      src: url("https://gatoware.xyz/fonts/JetBrainsMonoNL-Regular.ttf") format("truetype");
+    }
+
+    @font-face {
+      font-family: "JetbrainsMonoBold";
+      src: url("https://gatoware.xyz/fonts/JetBrainsMono-Bold.ttf") format("truetype");
+    }
+
+    @keyframes cotton-candy-scroll {
+      from { background-position: 0% 50%; }
+      to { background-position: 200% 50%; }
+    }
+
+    :root {
+      --light-blue: #4DB8EB;
+      --pink: #FFB5D8;
+      --light-pink: #FAE3EE;
+      --hero: #ffedf5;
+      --hero-soft: #ffe3ef;
+      --text: #29243a;
+      --text-muted: #6d667d;
+      --border: #efccdc;
+      --danger: #c64f6e;
+      --cotton-candy: linear-gradient(90deg, #ff66b2, #66ccff, #ff66b2);
+    }
+
+    * { box-sizing: border-box; }
+    html { scrollbar-width: none; }
+    html::-webkit-scrollbar { display: none; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px clamp(20px, 5vw, 72px) 0;
+      font-family: "JetbrainsMono", monospace;
+      color: var(--text);
+      background: var(--hero);
+    }
+
+    .cotton-candy-text {
+      background: var(--cotton-candy);
+      background-size: 200% 100%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: cotton-candy-scroll 3s linear infinite;
+    }
+
+    .cotton-candy-text-hover {
+      position: relative;
+      display: inline-block;
+      transition: color 0.4s ease;
+    }
+
+    .cotton-candy-text-hover::before {
+      content: attr(data-text);
+      position: absolute;
+      inset: 0;
+      background: var(--cotton-candy);
+      background-size: 200% 100%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      animation: cotton-candy-scroll 3s linear infinite;
+    }
+
+    .cotton-candy-text-hover:hover { color: transparent; }
+    .cotton-candy-text-hover:hover::before { opacity: 1; }
+
+    header {
+      position: relative;
+      z-index: 5;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: start;
+    }
+
+    #href-logo {
+      margin: 0 auto 0 5px;
+      font-family: "JetbrainsMonoBold", monospace;
+    }
+
+    header ul { margin: 0 5px 0 0; padding: 0; list-style: none; }
+    header li { display: inline; }
+    header li + li { margin-left: 6px; }
+    a { color: var(--text); text-decoration: none; }
+
+    header hr {
+      flex-basis: 100%;
+      width: 100%;
+      border: 0;
+      border-top: 1px solid var(--pink);
+    }
+
+    main { position: relative; z-index: 1; display: flow-root; }
+
+    .hero {
+      position: relative;
+      width: calc(100% + 2 * clamp(20px, 5vw, 72px));
+      min-height: calc(100vh - 65px);
+      margin-left: calc(-1 * clamp(20px, 5vw, 72px));
+      padding: 42px clamp(20px, 5vw, 72px);
+      display: flex;
+      justify-content: center;
+      align-items: start;
+      background: rgba(255, 237, 245, 0.86);
+    }
+
+    #particles-js { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+
+    .initiative-panel {
+      position: relative;
+      z-index: 4;
+      width: min(100%, 1180px);
+      padding: clamp(22px, 4vw, 40px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255, 237, 245, 0.94);
+      box-shadow: 0 8px 28px rgba(41, 36, 58, 0.12);
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: "JetbrainsMonoBold", monospace;
+      font-size: clamp(2rem, 5vw, 3.4rem);
+    }
+
+    .subtitle { margin: 8px 0 24px; color: var(--text-muted); }
+
+    .toolbar, .editor-actions {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .toolbar { margin-bottom: 18px; }
+
+    button {
+      position: relative;
+      z-index: 1;
+      padding: 10px 18px;
+      border: 0;
+      border-radius: 10px;
+      overflow: hidden;
+      color: white;
+      background: var(--light-blue);
+      cursor: pointer;
+      font: inherit;
+      transition: background-color 0.4s ease, opacity 0.2s ease;
+    }
+
+    button::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: var(--cotton-candy);
+      background-size: 200% 100%;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      animation: cotton-candy-scroll 3s linear infinite;
+    }
+
+    button:hover:not(:disabled) { background-color: transparent; }
+    button:hover:not(:disabled)::before { opacity: 1; }
+    button:disabled { cursor: default; opacity: 0.45; }
+    button.danger { background: var(--danger); }
+
+    #message { min-height: 1.5em; margin: 0 0 16px; color: var(--text-muted); }
+
+    .workflow-layout {
+      display: grid;
+      grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
+      gap: 16px;
+      text-align: left;
+    }
+
+    .workflow-list, .editor-card {
+      min-width: 0;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--light-pink);
+      box-shadow: 0 4px 14px rgba(41, 36, 58, 0.08);
+    }
+
+    .workflow-list { display: grid; align-content: start; gap: 8px; }
+
+    .workflow-item {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      background: var(--hero-soft);
+      text-align: left;
+    }
+
+    .workflow-item.selected { border-color: var(--light-blue); background: #fff8fb; }
+    .workflow-item::before { display: none; }
+    .workflow-item strong { display: block; font-family: "JetbrainsMonoBold", monospace; }
+    .workflow-item span { display: block; margin-top: 4px; color: var(--text-muted); font-size: 0.84rem; }
+
+    .editor-card { display: grid; gap: 10px; }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      background: #fff8fb;
+      font: inherit;
+    }
+
+    input:focus, textarea:focus {
+      outline: 2px solid rgba(77, 184, 235, 0.35);
+      border-color: var(--light-blue);
+    }
+
+    #script { min-height: 360px; resize: vertical; tab-size: 4; line-height: 1.45; }
+    .editor-actions { justify-content: flex-start; }
+
+    .output-card {
+      margin-top: 4px;
+      padding: 16px;
+      border-radius: 8px;
+      color: var(--light-pink);
+      background: var(--text);
+    }
+
+    .output-card h2 { margin: 0 0 10px; color: white; font-size: 1rem; }
+    #output { min-height: 4.5em; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+
+    @media (max-width: 760px) {
+      header ul { width: 100%; margin-top: 10px; text-align: left; }
+      .hero { padding-top: 28px; }
+      .initiative-panel { padding: 20px 14px; }
+      .workflow-layout { grid-template-columns: 1fr; }
+      #script { min-height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="cotton-candy-text" id="href-logo" href="https://gatoware.xyz/">gatoware.xyz</a>
+    <ul>
+      <li><a class="cotton-candy-text-hover" data-text="Atlas" href="https://gatoware.xyz/atlas">Atlas</a></li>
+      <li><a class="cotton-candy-text-hover" data-text="GatoLang" href="https://gatoware.xyz/gatolang">GatoLang</a></li>
+      <li><a class="cotton-candy-text-hover" data-text="MDG" href="https://gatoware.xyz/mdg">MDG</a></li>
+      <li><a class="cotton-candy-text-hover" data-text="Synapse" href="https://gatoware.xyz/synapse">Synapse</a></li>
+    </ul>
+    <hr>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div id="particles-js"></div>
+      <div class="initiative-panel">
+        <h1 class="cotton-candy-text">Initiative Workflows</h1>
+        <p class="subtitle">Automate your Initiative devices with Lua.</p>
+
+        <div class="toolbar">
+          <button id="newButton">New Workflow</button>
+          <button id="refreshButton">Refresh</button>
+        </div>
+
+        <p id="message" style="display:none"></p>
+
+        <div class="workflow-layout">
+          <div class="workflow-list" id="workflowList"></div>
+
+          <div class="editor-card">
+            <input id="name" type="text" placeholder="Workflow name">
+            <textarea id="script" spellcheck="false" placeholder="Lua workflow"></textarea>
+            <div class="editor-actions">
+              <button id="saveButton">Save</button>
+              <button id="toggleButton" disabled>Enable</button>
+              <button id="runButton" disabled>Run</button>
+              <button id="reloadButton" disabled>Reload</button>
+              <button class="danger" id="deleteButton" disabled>Delete</button>
+            </div>
+            <div class="output-card">
+              <h2>Recent output</h2>
+              <pre id="output">Nothing yet.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const workflowList = document.querySelector("#workflowList");
+    const message = document.querySelector("#message");
+    const nameInput = document.querySelector("#name");
+    const scriptInput = document.querySelector("#script");
+    const output = document.querySelector("#output");
+    const toggleButton = document.querySelector("#toggleButton");
+    const runButton = document.querySelector("#runButton");
+    const reloadButton = document.querySelector("#reloadButton");
+    const deleteButton = document.querySelector("#deleteButton");
+    let workflows = [];
+    let selectedId = null;
+    let selected = null;
+
+    document.querySelector("#newButton").addEventListener("click", newWorkflow);
+    document.querySelector("#refreshButton").addEventListener("click", () => refresh(true));
+    document.querySelector("#saveButton").addEventListener("click", saveWorkflow);
+    toggleButton.addEventListener("click", toggleWorkflow);
+    runButton.addEventListener("click", () => workflowCommand("run"));
+    reloadButton.addEventListener("click", () => workflowCommand("reload"));
+    deleteButton.addEventListener("click", deleteWorkflow);
+
+    async function request(path, options = {}) {
+      const response = await fetch(path, options);
+      const text = await response.text();
+      if (!response.ok) throw new Error(text || `HTTP ${response.status}`);
+      return text ? JSON.parse(text) : null;
+    }
+
+    async function refresh(loadSelected = false) {
+      try {
+        const workflowResponse = await request("/api/workflows");
+        workflows = workflowResponse.workflows;
+        renderList();
+        if (selectedId && (loadSelected || !selected)) await selectWorkflow(selectedId);
+        else if (selectedId) updateSelectedSummary();
+      } catch (error) {
+        message.style.display = "";
+        message.textContent = "Could not load workflows: " + error.message;
+      }
+    }
+
+    function renderList() {
+      workflowList.replaceChildren();
+      if (!workflows.length) {
+        const empty = document.createElement("span");
+        empty.textContent = "No workflows yet.";
+        workflowList.append(empty);
+        return;
+      }
+      for (const workflow of workflows) {
+        const button = document.createElement("button");
+        const title = document.createElement("strong");
+        const state = document.createElement("span");
+        button.className = "workflow-item" + (workflow.id === selectedId ? " selected" : "");
+        title.textContent = workflow.name;
+        state.textContent = workflow.running ? "running" : workflow.state;
+        button.append(title, state);
+        button.addEventListener("click", () => selectWorkflow(workflow.id));
+        workflowList.append(button);
+      }
+    }
+
+    async function selectWorkflow(workflowId) {
+      try {
+        selected = await request("/api/workflows/" + encodeURIComponent(workflowId));
+        selectedId = workflowId;
+        nameInput.value = selected.name;
+        scriptInput.value = selected.script;
+        updateControls();
+        renderList();
+      } catch (error) {
+        message.style.display = "";
+        message.textContent = "Could not load workflow: " + error.message;
+      }
+    }
+
+    function updateSelectedSummary() {
+      const summary = workflows.find(workflow => workflow.id === selectedId);
+      if (!summary || !selected) return;
+      Object.assign(selected, summary);
+      updateControls();
+    }
+
+    function updateControls() {
+      const exists = Boolean(selectedId && selected);
+      toggleButton.disabled = !exists;
+      runButton.disabled = !exists || !selected.enabled || selected.state === "error";
+      reloadButton.disabled = !exists;
+      deleteButton.disabled = !exists;
+      toggleButton.textContent = exists && selected.enabled ? "Disable" : "Enable";
+      const logs = exists ? selected.logs : [];
+      output.textContent = logs && logs.length
+        ? logs.map(entry => `${entry.timestamp} ${entry.level.toUpperCase()} ${entry.message}`).join("\n")
+        : "Nothing yet.";
+      if (exists && selected.last_error) output.textContent += `\n${selected.last_error}`;
+    }
+
+    function newWorkflow() {
+      selectedId = null;
+      selected = null;
+      nameInput.value = "";
+      scriptInput.value = `local device = initiative.device("Device Name")\n\ninitiative.on_run(function()\n    device:run("Action")\nend)\n`;
+      updateControls();
+      renderList();
+      nameInput.focus();
+    }
+
+    async function saveWorkflow() {
+      const payload = JSON.stringify({ name: nameInput.value, script: scriptInput.value });
+      try {
+        selected = selectedId
+          ? await request("/api/workflows/" + encodeURIComponent(selectedId), {
+              method: "PUT", headers: { "Content-Type": "application/json" }, body: payload
+            })
+          : await request("/api/workflows", {
+              method: "POST", headers: { "Content-Type": "application/json" }, body: payload
+            });
+        selectedId = selected.id;
+        message.style.display = "";
+        message.textContent = "Saved " + selected.name + ".";
+        setTimeout(() => { message.style.display = "none"; }, 3000);
+        await refresh(false);
+        updateControls();
+      } catch (error) {
+        message.style.display = "";
+        message.textContent = "Could not save workflow: " + error.message;
+      }
+    }
+
+    async function toggleWorkflow() {
+      if (!selected) return;
+      await workflowCommand(selected.enabled ? "disable" : "enable");
+    }
+
+    async function workflowCommand(command) {
+      if (!selectedId) return;
+      try {
+        selected = await request(`/api/workflows/${encodeURIComponent(selectedId)}/${command}`, {
+          method: "POST"
+        });
+        message.style.display = "";
+        message.textContent = `${selected.name}: ${selected.state}.`;
+        setTimeout(() => { message.style.display = "none"; }, 3000);
+        await refresh(false);
+        updateControls();
+      } catch (error) {
+        message.style.display = "";
+        message.textContent = `Could not ${command} workflow: ${error.message}`;
+      }
+    }
+
+    async function deleteWorkflow() {
+      if (!selectedId || !selected || !confirm(`Delete ${selected.name}?`)) return;
+      try {
+        await request("/api/workflows/" + encodeURIComponent(selectedId), { method: "DELETE" });
+        newWorkflow();
+        message.style.display = "";
+        message.textContent = "Workflow deleted.";
+        setTimeout(() => { message.style.display = "none"; }, 3000);
+        await refresh(false);
+      } catch (error) {
+        message.style.display = "";
+        message.textContent = "Could not delete workflow: " + error.message;
+      }
+    }
+
+    newWorkflow();
+    refresh(true);
+    setInterval(() => refresh(false), 5000);
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script>
+    const pink = getComputedStyle(document.documentElement).getPropertyValue("--pink").trim();
+    if (window.particlesJS) particlesJS("particles-js", {
+      particles: {
+        number: { value: 80, density: { enable: true, value_area: 800 } },
+        color: { value: pink },
+        shape: { type: "circle" },
+        opacity: { value: 0.85 },
+        size: { value: 3, random: true },
+        line_linked: { enable: true, distance: 150, color: pink, opacity: 0.7, width: 1 },
+        move: { enable: true, speed: 2, direction: "none", random: false, straight: false, out_mode: "out" }
+      },
+      interactivity: {
+        detect_on: "window",
+        events: {
+          onhover: { enable: true, mode: "repulse" },
+          onclick: { enable: true, mode: "push" },
+          resize: true
+        },
+        modes: {
+          repulse: { distance: 180, duration: 0.4 },
+          push: { particles_nb: 4 }
+        }
+      },
+      retina_detect: true
+    });
+  </script>
+</body>
+</html>
